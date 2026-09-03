@@ -1,13 +1,14 @@
 (function () {
     'use strict';
 
+    // Проверка инициализации Lampa
     if (typeof Lampa === 'undefined') return;
 
     function initPrestigePlugin() {
         if (window['cinema_online_prestige_loaded']) return;
         window['cinema_online_prestige_loaded'] = true;
 
-        // Регистрируем компонент отображения по стандарту Lampa
+        // 1. Регистрируем отдельный уникальный компонент отображения
         Lampa.Component.add('cinema_online_prestige', function (object) {
             var scroll = new Lampa.Scroll({ mask: true, over: true });
             
@@ -43,12 +44,13 @@
             };
         });
 
-        // Отслеживаем открытие карточек через стандартный Listener
+        // 2. Отслеживаем открытие карточки через стандартный Listener
         Lampa.Listener.follow('app', function (event) {
             if (event.type === 'activity' && event.name === 'card') {
                 setTimeout(function () {
                     var cardRender = event.object.render();
-                    // Исправлен селектор контейнера кнопок под современные версии Lampa
+                    
+                    // Классы контейнеров кнопок из рабочих примеров
                     var targetContainer = cardRender.find('.full-start__buttons, .card__buttons, .movie-buttons');
 
                     if (targetContainer.length && !cardRender.find('.prestige-online-btn').length) {
@@ -57,7 +59,7 @@
                                       '</div>';
                         var $btn = $(btnHtml);
 
-                        // Исправлен обработчик клика для корректной работы на Android-телефонах (сенсорный ввод)
+                        // Добавлен click для полноценной работы на Android-телефонах
                         $btn.on('hover:enter click', function () {
                             Lampa.Activity.push({
                                 url: '',
@@ -69,7 +71,7 @@
                             });
                         });
 
-                        // Позиционирование кнопки строго после кнопки "Смотреть"
+                        // Вставляем кнопку строго после кнопки "Смотреть"
                         var mainBtn = targetContainer.find('.full-start__button:first, .button--play:first, .button--watch:first');
                         if (mainBtn.length) {
                             mainBtn.after($btn);
@@ -77,25 +79,26 @@
                             targetContainer.append($btn);
                         }
 
-                        // Безопасное обновление фокуса навигации (не вешает мобильный интерфейс)
+                        // Безопасное обновление навигации без принудительного toggle
                         if (Lampa.Controller.window_status && Lampa.Controller.window_status.name === 'card') {
                             if (typeof Lampa.Controller.updateSelect === 'function') {
                                 Lampa.Controller.updateSelect(targetContainer);
-                            } else {
-                                Lampa.Controller.toggle('card');
                             }
                         }
                     }
-                }, 400); // Оптимальная задержка рендеринга
+                }, 400);
             }
         });
     }
 
-    if (document.readyState === 'complete') {
-        setTimeout(initPrestigePlugin, 500);
+    // Правильный запуск плагина в Lampa (без ожидания загрузки всего документа)
+    if (window.lampa_started) {
+        initPrestigePlugin();
     } else {
-        window.addEventListener('load', function () {
-            setTimeout(initPrestigePlugin, 500);
+        Lampa.Listener.follow('app', function (event) {
+            if (event.type === 'ready') {
+                initPrestigePlugin();
+            }
         });
     }
 })();
