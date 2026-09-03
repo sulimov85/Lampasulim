@@ -1,19 +1,14 @@
 (function () {
     'use strict';
 
-    // *** ОБЯЗАТЕЛЬНЫЙ ВЫЗОВ ***
     Lampa.Platform.tv();
 
-    // Переменная для предотвращения повторной инициализации
     if (window.prestige_online_loaded) return;
     window.prestige_online_loaded = true;
 
-    // Ожидание полной загрузки Lampa
     function initPlugin() {
-        // Слушаем открытие карточки
         Lampa.Listener.follow('app', function (event) {
             if (event.type === 'activity' && event.name === 'card') {
-                // Небольшая задержка для полной отрисовки
                 setTimeout(function () {
                     addPrestigeButton(event.object);
                 }, 500);
@@ -25,9 +20,8 @@
         var cardRender = cardObject.render ? cardObject.render() : null;
         if (!cardRender) return;
 
-        // Ищем контейнер с кнопками
         var container = cardRender.find(
-            '.full-start__buttons, .card__buttons, .movie-buttons, ' +
+            '.full-start__buttons, .card__buttons, .movie-button, ' +
             '.buttons-row, .card-actions, [data-role="buttons"]'
         );
         if (!container.length) {
@@ -35,10 +29,8 @@
         }
         if (!container.length) return;
 
-        // Проверяем, не добавлена ли уже кнопка
         if (container.find('.prestige-online-btn').length) return;
 
-        // Создаём кнопку
         var btn = $(
             '<div class="full-start__button selector lampac--button prestige-online-btn" style="margin-left:10px;">' +
             '<span>Prestige Онлайн</span>' +
@@ -64,7 +56,6 @@
             });
         });
 
-        // Вставляем после первой кнопки
         var firstBtn = container.find('.full-start__button:first, .button--play:first, .button--watch:first');
         if (firstBtn.length) {
             firstBtn.after(btn);
@@ -72,13 +63,11 @@
             container.append(btn);
         }
 
-        // Обновляем навигацию
         if (Lampa.Controller && typeof Lampa.Controller.updateSelect === 'function') {
             Lampa.Controller.updateSelect(container);
         }
     }
 
-    // Запускаем плагин
     if (window.lampa_started) {
         initPlugin();
     } else {
