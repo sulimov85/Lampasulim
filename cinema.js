@@ -1,36 +1,27 @@
-(function() {
+(function () {
     'use strict';
 
-    if (typeof Lampa === 'undefined') return;
+    // *** ОБЯЗАТЕЛЬНЫЙ ВЫЗОВ ***
+    Lampa.Platform.tv();
 
-    // Регистрируем плагин
-    Lampa.Plugin.add({
-        id: 'prestige-online',
-        name: 'Prestige Онлайн',
-        version: '1.1',
-        description: 'Добавляет кнопку поиска в карточке',
-        onStart: function() {
-            if (window._prestige_online_initialized) return;
-            window._prestige_online_initialized = true;
+    // Переменная для предотвращения повторной инициализации
+    if (window.prestige_online_loaded) return;
+    window.prestige_online_loaded = true;
 
-            // Слушаем открытие карточки
-            Lampa.Listener.follow('app', function(event) {
-                if (event.type === 'activity' && event.name === 'card') {
-                    var cardObject = event.object;
-                    // Ждём рендера карточки (более надёжно)
-                    setTimeout(function() {
-                        try {
-                            addButtonToCard(cardObject);
-                        } catch (e) {
-                            console.warn('Prestige plugin error:', e);
-                        }
-                    }, 500);
-                }
-            });
-        }
-    });
+    // Ожидание полной загрузки Lampa
+    function initPlugin() {
+        // Слушаем открытие карточки
+        Lampa.Listener.follow('app', function (event) {
+            if (event.type === 'activity' && event.name === 'card') {
+                // Небольшая задержка для полной отрисовки
+                setTimeout(function () {
+                    addPrestigeButton(event.object);
+                }, 500);
+            }
+        });
+    }
 
-    function addButtonToCard(cardObject) {
+    function addPrestigeButton(cardObject) {
         var cardRender = cardObject.render ? cardObject.render() : null;
         if (!cardRender) return;
 
@@ -40,7 +31,6 @@
             '.buttons-row, .card-actions, [data-role="buttons"]'
         );
         if (!container.length) {
-            // Если не нашли, пробуем найти внутри .full-start или .card
             container = cardRender.find('.full-start, .card').find('.buttons, .actions');
         }
         if (!container.length) return;
@@ -49,9 +39,13 @@
         if (container.find('.prestige-online-btn').length) return;
 
         // Создаём кнопку
-        var btn = $('<div class="full-start__button selector lampac--button prestige-online-btn" style="margin-left:10px;"><span>Prestige Онлайн</span></div>');
+        var btn = $(
+            '<div class="full-start__button selector lampac--button prestige-online-btn" style="margin-left:10px;">' +
+            '<span>Prestige Онлайн</span>' +
+            '</div>'
+        );
 
-        btn.on('hover:enter click', function(e) {
+        btn.on('hover:enter click', function (e) {
             e.stopPropagation();
             var movie = cardObject.data ? cardObject.data.movie : null;
             if (!movie) movie = cardObject.movie || {};
@@ -84,4 +78,14 @@
         }
     }
 
+    // Запускаем плагин
+    if (window.lampa_started) {
+        initPlugin();
+    } else {
+        Lampa.Listener.follow('app', function (event) {
+            if (event.type === 'ready') {
+                initPlugin();
+            }
+        });
+    }
 })();
