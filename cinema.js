@@ -7,7 +7,7 @@
         if (window['cinema_online_prestige_loaded']) return;
         window['cinema_online_prestige_loaded'] = true;
 
-        // Регистрируем отдельный уникальный компонент отображения
+        // Регистрируем компонент отображения по стандарту Lampa
         Lampa.Component.add('cinema_online_prestige', function (object) {
             var scroll = new Lampa.Scroll({ mask: true, over: true });
             
@@ -43,13 +43,13 @@
             };
         });
 
-        // Отслеживаем открытие любой карточки в приложении
+        // Отслеживаем открытие карточек через стандартный Listener
         Lampa.Listener.follow('app', function (event) {
             if (event.type === 'activity' && event.name === 'card') {
                 setTimeout(function () {
                     var cardRender = event.object.render();
-                    // Ищем контейнер с кнопками в карточке
-                    var targetContainer = cardRender.find('.full-start__buttons, .card-buttons, .movie-buttons');
+                    // Исправлен селектор контейнера кнопок под современные версии Lampa
+                    var targetContainer = cardRender.find('.full-start__buttons, .card__buttons, .movie-buttons');
 
                     if (targetContainer.length && !cardRender.find('.prestige-online-btn').length) {
                         var btnHtml = '<div class="full-start__button selector lampac--button prestige-online-btn" style="margin-left: 10px;">' +
@@ -57,7 +57,8 @@
                                       '</div>';
                         var $btn = $(btnHtml);
 
-                        $btn.on('hover:enter', function () {
+                        // Исправлен обработчик клика для корректной работы на Android-телефонах (сенсорный ввод)
+                        $btn.on('hover:enter click', function () {
                             Lampa.Activity.push({
                                 url: '',
                                 title: 'Prestige Онлайн',
@@ -68,20 +69,24 @@
                             });
                         });
 
-                        // Вставляем кнопку сразу после стандартной кнопки "Смотреть"
-                        var mainBtn = targetContainer.find('.full-start__button:first, .button--play:first');
+                        // Позиционирование кнопки строго после кнопки "Смотреть"
+                        var mainBtn = targetContainer.find('.full-start__button:first, .button--play:first, .button--watch:first');
                         if (mainBtn.length) {
                             mainBtn.after($btn);
                         } else {
                             targetContainer.append($btn);
                         }
 
-                        // Переинициализируем навигацию пульта, чтобы кнопка стала кликабельной
+                        // Безопасное обновление фокуса навигации (не вешает мобильный интерфейс)
                         if (Lampa.Controller.window_status && Lampa.Controller.window_status.name === 'card') {
-                            Lampa.Controller.toggle('card');
+                            if (typeof Lampa.Controller.updateSelect === 'function') {
+                                Lampa.Controller.updateSelect(targetContainer);
+                            } else {
+                                Lampa.Controller.toggle('card');
+                            }
                         }
                     }
-                }, 300); // Небольшая задержка, чтобы карточка успела отрендериться
+                }, 400); // Оптимальная задержка рендеринга
             }
         });
     }
